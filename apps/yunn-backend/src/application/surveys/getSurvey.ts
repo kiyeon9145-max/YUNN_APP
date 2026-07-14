@@ -18,6 +18,7 @@ export async function getSurvey(sessionId: string): Promise<SurveyGetResponse> {
     gender: survey.gender,
     age: survey.age,
     city: survey.city,
+    photoUploaded: survey.photoUploaded,
     createdAt: survey.createdAt.toISOString(),
   };
 }

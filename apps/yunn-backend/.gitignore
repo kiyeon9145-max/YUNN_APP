@@ -196,4 +196,10 @@ dist
 # End of https://www.toptal.com/developers/gitignore/api/macos,node,visualstudiocode
 /src/generated/prisma
 
-/src/generated/prisma
+# TypeScript compilation output
+/src/**/*.js
+/src/**/*.d.ts
+/src/**/*.map
+/prisma.config.js
+/prisma.config.d.ts
+/prisma.config.js.map

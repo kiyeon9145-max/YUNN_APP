@@ -44,6 +44,7 @@ export const SurveyGetResponseSchema = z.object({
   gender: z.string().nullable(),
   age: z.string().nullable(),
   city: z.string().nullable(),
+  photoUploaded: z.boolean(),
   createdAt: z.string(),
 });
 
