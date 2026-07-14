@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
 import { RoutineUpdateSchema } from "../../../shared/schemas/routine.js";
+import { sessionIdSchema } from "../../../shared/schemas/common.js";
 import { updateRoutine } from "../../../application/routine/updateRoutine.js";
 import { getRoutine } from "../../../application/routine/getRoutine.js";
 import { sendSuccess } from "../../../shared/utils/response.js";
@@ -13,6 +14,15 @@ router.patch(
   "/:sessionId",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // sessionId 검증
+      const sessionIdValidation = sessionIdSchema.safeParse(
+        req.params.sessionId
+      );
+      if (!sessionIdValidation.success) {
+        const fieldErrors = { sessionId: [sessionIdValidation.error.message] };
+        throw new ValidationError(fieldErrors);
+      }
+
       // 입력값 검증
       const parseResult = RoutineUpdateSchema.safeParse(req.body);
       if (!parseResult.success) {
@@ -21,7 +31,7 @@ router.patch(
       }
 
       // 루틴 저장/업데이트
-      const sessionId = req.params.sessionId as string;
+      const sessionId = sessionIdValidation.data;
       const result = await updateRoutine(sessionId, parseResult.data);
       sendSuccess(res, result);
     } catch (err) {
@@ -35,7 +45,16 @@ router.get(
   "/:sessionId",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const sessionId = req.params.sessionId as string;
+      // sessionId 검증
+      const sessionIdValidation = sessionIdSchema.safeParse(
+        req.params.sessionId
+      );
+      if (!sessionIdValidation.success) {
+        const fieldErrors = { sessionId: [sessionIdValidation.error.message] };
+        throw new ValidationError(fieldErrors);
+      }
+
+      const sessionId = sessionIdValidation.data;
       const result = await getRoutine(sessionId);
       sendSuccess(res, result);
     } catch (err) {

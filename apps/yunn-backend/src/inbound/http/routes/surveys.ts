@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { Request, Response, NextFunction } from "express";
 import { SurveySubmitSchema } from "../../../shared/schemas/surveys.js";
+import { sessionIdSchema } from "../../../shared/schemas/common.js";
 import { submitSurvey } from "../../../application/surveys/submitSurvey.js";
 import { getSurvey } from "../../../application/surveys/getSurvey.js";
 import { sendSuccess } from "../../../shared/utils/response.js";
@@ -34,7 +35,16 @@ router.get(
   "/:sessionId",
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const sessionId = req.params.sessionId as string;
+      // sessionId 검증
+      const sessionIdValidation = sessionIdSchema.safeParse(
+        req.params.sessionId
+      );
+      if (!sessionIdValidation.success) {
+        const fieldErrors = { sessionId: [sessionIdValidation.error.message] };
+        throw new ValidationError(fieldErrors);
+      }
+
+      const sessionId = sessionIdValidation.data;
       const result = await getSurvey(sessionId);
       sendSuccess(res, result);
     } catch (err) {

@@ -478,4 +478,20 @@ describe("GET /surveys/:sessionId", () => {
       }),
     });
   });
+
+  // sessionId 검증 - 빈 문자열
+  it("should return VALIDATION_ERROR when sessionId is empty string", async () => {
+    const response = await request(app).get("/surveys/");
+
+    expect(response.status).toBe(404);
+  });
+
+  // sessionId 검증 - 255자 이상
+  it("should return VALIDATION_ERROR when sessionId exceeds 255 characters", async () => {
+    const longSessionId = "a".repeat(256);
+    const response = await request(app).get(`/surveys/${longSessionId}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
+  });
 });

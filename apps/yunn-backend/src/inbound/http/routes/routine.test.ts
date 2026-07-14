@@ -374,6 +374,21 @@ describe("PATCH /routine/:sessionId", () => {
     expect(response.body.error.details?.fieldErrors?.morning).toBeDefined();
     expect(response.body.error.details?.fieldErrors?.evening).toBeDefined();
   });
+
+  // sessionId 검증 - 255자 이상
+  it("should return VALIDATION_ERROR when sessionId exceeds 255 characters in PATCH", async () => {
+    const longSessionId = "a".repeat(256);
+    const response = await request(app)
+      .patch(`/routine/${longSessionId}`)
+      .send({
+        dateKey: "2026-07-14",
+        morning: [true, false, true, false],
+        evening: [true, true, false, true],
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
+  });
 });
 
 describe("GET /routine/:sessionId", () => {
@@ -438,5 +453,21 @@ describe("GET /routine/:sessionId", () => {
     expect(response.body.data.checks).toHaveProperty("2026-07-01");
     expect(response.body.data.checks).toHaveProperty("2026-07-02");
     expect(response.body.data.startDate).toBe("2026-07-01");
+  });
+
+  // sessionId 검증 - 빈 문자열
+  it("should return VALIDATION_ERROR when sessionId is empty string in GET", async () => {
+    const response = await request(app).get("/routine/");
+
+    expect(response.status).toBe(404);
+  });
+
+  // sessionId 검증 - 255자 이상
+  it("should return VALIDATION_ERROR when sessionId exceeds 255 characters in GET", async () => {
+    const longSessionId = "a".repeat(256);
+    const response = await request(app).get(`/routine/${longSessionId}`);
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("VALIDATION_ERROR");
   });
 });
