@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Next.js
+.next/
+out/
+
+# Build
+dist/
+build/
+
+# Coverage
+coverage/
+
+# Turbo (나중에 Turborepo 사용 시)
+.turbo/
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# TypeScript
+*.tsbuildinfo
