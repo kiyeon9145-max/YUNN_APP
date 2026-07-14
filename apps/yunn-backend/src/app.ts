@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { errorHandler } from "./inbound/http/middleware/errorHandler.js";
+import surveyRouter from "./inbound/http/routes/surveys.js";
 
 export function createApp() {
   const app = express();
@@ -9,10 +10,13 @@ export function createApp() {
   app.use(cors());
   app.use(express.json());
 
-  // 헬스 체크 (임시)
-  app.get("/health", (req, res) => {
+  // 헬스 체크
+  app.get("/health", (_req, res) => {
     res.json({ success: true, data: { status: "ok" } });
   });
+
+  // 라우터
+  app.use("/surveys", surveyRouter);
 
   // 에러 핸들러 (마지막에 등록)
   app.use(errorHandler);
