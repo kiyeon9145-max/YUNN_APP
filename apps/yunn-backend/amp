@@ -1,0 +1,8 @@
+Loaded Prisma config from prisma.config.ts.
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Prisma schema loaded from prisma/schema.prisma.
+Error: P1010: User was denied access on the database `(not available)`
+Error: P1010: User was denied access on the database `(not available)`

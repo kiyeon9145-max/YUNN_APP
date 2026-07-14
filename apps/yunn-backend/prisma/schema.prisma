@@ -11,3 +11,39 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model SurveySubmission {
+  id                   Int     @id @default(autoincrement())
+  sessionId            String
+  city                 String?
+  gender               String?
+  age                  String?
+  skinType             String?
+  concerns             String?
+  trigger              String[]
+  sensitivity          String?
+  outdoor              String?
+  sunscreen            String?
+  sleep                String?
+  stress               String?
+  routineLevel         String?
+  photoUploaded        Boolean
+  resultSkinType       String?
+  resultConcernType    String?
+  createdAt            DateTime @default(now())
+
+  @@index([sessionId])
+}
+
+model RoutineCheck {
+  id        Int     @id @default(autoincrement())
+  sessionId String
+  dateKey   String  // YYYY-MM-DD
+  morning   Boolean[]
+  evening   Boolean[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, dateKey])
+  @@index([sessionId])
+}
