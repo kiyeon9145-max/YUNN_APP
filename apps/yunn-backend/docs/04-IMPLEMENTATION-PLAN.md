@@ -1,705 +1,201 @@
-# 4. 구현 계획 (TDD)
+# 4. 단계별 구현 계획 (TDD)
 
 ---
 
-## 개요
+## TDD 방식
 
-**TDD (Test-Driven Development)** 방식으로 구현합니다:
-1. 테스트 먼저 작성 (실패)
-2. zod 스키마 정의
-3. 최소한의 구현 (테스트 통과)
-4. 리팩터 (필요시)
+**순서**: 테스트 작성 → 실패 확인 → 최소 구현 → 테스트 통과
+
+각 API마다 동일한 패턴으로 진행합니다:
+1. zod 스키마 작성 (입력값 검증 규칙)
+2. 테스트 케이스 작성 (성공/실패 시나리오)
+3. Repository 구현 (DB 접근)
+4. 비즈니스 로직 구현 (계산/처리)
+5. 라우터 구현 (HTTP 진입점)
+6. 테스트 실행 (npm test)
 
 ---
 
 ## Phase 1: 기초 설정 (1일)
 
-### 1.1 에러 핸들링 클래스
+### 에러 처리 체계
+`src/shared/errors/AppError.ts`에 에러 클래스들을 정의합니다:
+- `AppError`: 기본 클래스 (code, message, statusCode, details)
+- `ValidationError`: 입력값 검증 실패 (400 + fieldErrors)
+- `NotFoundError`: 데이터 없음 (404)
+- `ServerError`: 예기치 못한 에러 (500)
 
-**파일**: `src/shared/errors/AppError.ts`
+### 에러 미들웨어
+`src/inbound/http/middleware/errorHandler.ts`에 Express 에러 핸들러를 작성합니다.
+- AppError 인스턴스면 상태 코드와 함께 { success: false, error: {...} } 형식으로 응답
+- 다른 에러면 500 SERVER_ERROR로 통일
 
-```typescript
-export class AppError extends Error {
-  constructor(
-    public code: string,
-    public message: string,
-    public statusCode: number,
-    public details?: unknown,
-  ) {
-    super(message);
-    this.name = "AppError";
-  }
-}
+### 성공 응답 유틸
+`src/shared/utils/response.ts`에 sendSuccess() 함수를 작성합니다.
+- { success: true, data: {...} } 형식으로 응답
 
-export class ValidationError extends AppError {
-  constructor(public fieldErrors: Record<string, string[]>) {
-    super("VALIDATION_ERROR", "입력값이 유효하지 않습니다", 400, {
-      fieldErrors,
-    });
-  }
-}
+### app.ts 설정
+`src/app.ts`에서:
+1. Express 인스턴스 생성
+2. cors, express.json() 미들웨어 적용
+3. 라우터 마운트 (나중에 추가)
+4. 에러 핸들러를 마지막에 등록
 
-export class NotFoundError extends AppError {
-  constructor(message: string) {
-    super("NOT_FOUND", message, 404);
-  }
-}
-
-export class ServerError extends AppError {
-  constructor(message: string = "일시적 오류입니다. 다시 시도해주세요") {
-    super("SERVER_ERROR", message, 500);
-  }
-}
-```
-
-### 1.2 에러 핸들러 미들웨어
-
-**파일**: `src/inbound/http/middleware/errorHandler.ts`
-
-```typescript
-import { Request, Response, NextFunction } from "express";
-import { AppError } from "@/shared/errors/AppError";
-
-export const errorHandler = (
-  err: Error,
-  _req: Request,
-  res: Response,
-  _next: NextFunction,
-) => {
-  if (err instanceof AppError) {
-    return res.status(err.statusCode).json({
-      success: false,
-      error: {
-        code: err.code,
-        message: err.message,
-        ...(err.details && { details: err.details }),
-      },
-    });
-  }
-
-  console.error("Unexpected error:", err);
-  res.status(500).json({
-    success: false,
-    error: {
-      code: "SERVER_ERROR",
-      message: "일시적 오류입니다. 다시 시도해주세요",
-    },
-  });
-};
-```
-
-### 1.3 성공 응답 유틸
-
-**파일**: `src/shared/utils/response.ts`
-
-```typescript
-import { Response } from "express";
-
-export function sendSuccess<T>(res: Response, data: T, statusCode = 200) {
-  return res.status(statusCode).json({
-    success: true,
-    data,
-  });
-}
-```
-
-### 1.4 app.ts 업데이트
-
-**파일**: `src/app.ts`
-
-```typescript
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { errorHandler } from "./inbound/http/middleware/errorHandler";
-
-dotenv.config();
-
-export const app = express();
-
-// 미들웨어
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? "http://localhost:3000" }));
-app.use(express.json());
-
-// 라우터 (Phase 2에서 추가)
-// app.use("/surveys", surveyRouter);
-// app.use("/routine", routineRouter);
-
-// 에러 핸들러 (반드시 마지막)
-app.use(errorHandler);
+### 실행 확인
+```bash
+npm run dev
+# http://localhost:4000 에 접속하면 404 (정상)
 ```
 
 ---
 
 ## Phase 2: 설문 API (2-3일)
 
-### 2.1 zod 스키마
+### Step 1: zod 스키마 작성
+`src/shared/schemas/surveys.ts`에 SurveySubmitSchema를 정의합니다.
 
-**파일**: `src/shared/schemas/surveys.ts`
+검증 규칙:
+- sessionId: 필수 (string)
+- skinType: 선택, enum (Oily/Dry/Combination/Normal)
+- concerns: 선택, string
+- trigger: 선택, string[]
+- 나머지: 모두 선택
 
-```typescript
-import { z } from "zod";
+### Step 2: 테스트 작성
+`src/inbound/http/routes/surveys.test.ts`에 supertest로 테스트를 작성합니다.
 
-export const SurveySubmitSchema = z.object({
-  sessionId: z.string().min(1, "sessionId는 필수입니다"),
-  
-  city: z.string().optional(),
-  gender: z.enum(["Male", "Female", "Other"]).optional(),
-  age: z.enum(["18-24", "25-34", "35-44", "45-54", "55+"]).optional(),
-  skinType: z
-    .enum(["Oily", "Dry", "Combination", "Normal"])
-    .optional()
-    .refine((val) => !val || val in ["Oily", "Dry", "Combination", "Normal"]),
-  concerns: z.string().optional(),
-  trigger: z.array(z.string()).optional(),
-  sensitivity: z.enum(["Normal", "Sensitive", "Very sensitive"]).optional(),
-  outdoor: z.enum(["Under 1h", "1-2h", "2-3h", "3h+"]).optional(),
-  sunscreen: z
-    .enum(["Always", "Sometimes", "Rarely", "Never"])
-    .optional(),
-  sleep: z
-    .enum(["Under 5h", "5-6h", "6-7h", "7-8h", "8h+"])
-    .optional(),
-  stress: z.enum(["Low", "Medium", "High", "Very high"]).optional(),
-  routineLevel: z
-    .enum(["Beginner", "Intermediate", "Advanced"])
-    .optional(),
-  photoUploaded: z.boolean().default(false),
-});
+테스트 케이스:
+- 필수값 누락 → 400 VALIDATION_ERROR
+- 유효한 설문 → 200 성공, resultSkinType/resultConcernType 반환
+- 정규화 테스트: "Uneven skin tone" → "Tone", "Acne marks" → "Marks"
+- 존재하는 sessionId 조회 → 데이터 반환
+- 없는 sessionId 조회 → 404 NOT_FOUND
 
-export type SurveySubmitInput = z.infer<typeof SurveySubmitSchema>;
-```
+### Step 3: Repository 구현
+`src/outbound/persistence/surveyRepository.ts`에:
+- `create(data)`: SurveySubmission 테이블에 insert
+- `findLatestBySessionId(sessionId)`: 해당 sessionId의 최신 1개 조회
 
-### 2.2 유틸 함수: toConcernKey
+### Step 4: 비즈니스 로직
+`src/application/surveys/submitSurvey.ts`에:
+- 입력값으로 resultSkinType, resultConcernType 계산
+- toConcernKey() 함수 (프론트의 result-data.ts에서 포팅)
+- Repository.create() 호출해서 저장
 
-**파일**: `src/shared/utils/normalize.ts`
+`src/application/surveys/getSurvey.ts`에:
+- Repository.findLatestBySessionId() 호출
+- 없으면 NotFoundError throw
+- 있으면 필드 정규화해서 반환
 
-```typescript
-// 프론트 result-data.ts의 toConcernKey() 포팅
-export function toConcernKey(concern: string | undefined): string {
-  if (concern === "Uneven skin tone") return "Tone";
-  if (concern === "Acne marks") return "Marks";
-  return concern || "Acne";
-}
-```
+### Step 5: 라우터 구현
+`src/inbound/http/routes/surveys.ts`에:
+- POST /surveys: zod 검증 → submitSurvey() 호출 → sendSuccess()
+- GET /surveys/:sessionId: getSurvey() 호출 → sendSuccess()
 
-### 2.3 설문 저장 로직
+에러는 try-catch로 잡아서 next(err)로 전달 (에러 미들웨어가 처리)
 
-**파일**: `src/application/surveys/submitSurvey.ts`
-
-```typescript
-import { SurveyRepository } from "@/outbound/persistence/surveyRepository";
-import { toConcernKey } from "@/shared/utils/normalize";
-import type { SurveySubmitInput } from "@/shared/schemas/surveys";
-
-export async function submitSurvey(input: SurveySubmitInput) {
-  const resultSkinType = input.skinType || "Oily";
-  const resultConcernType = toConcernKey(input.concerns);
-
-  const saved = await SurveyRepository.create({
-    sessionId: input.sessionId,
-    city: input.city,
-    gender: input.gender,
-    age: input.age,
-    skinType: input.skinType,
-    concern: input.concerns,
-    trigger: input.trigger || [],
-    sensitivity: input.sensitivity,
-    outdoor: input.outdoor,
-    sunscreen: input.sunscreen,
-    sleep: input.sleep,
-    stress: input.stress,
-    routineLevel: input.routineLevel,
-    photoUploaded: input.photoUploaded,
-    resultSkinType,
-    resultConcernType,
-  });
-
-  return {
-    resultSkinType,
-    resultConcernType,
-    sessionId: input.sessionId,
-    createdAt: saved.createdAt.toISOString(),
-  };
-}
-```
-
-### 2.4 설문 조회 로직
-
-**파일**: `src/application/surveys/getSurvey.ts`
-
-```typescript
-import { SurveyRepository } from "@/outbound/persistence/surveyRepository";
-import { NotFoundError } from "@/shared/errors/AppError";
-
-export async function getSurvey(sessionId: string) {
-  const survey = await SurveyRepository.findLatestBySessionId(sessionId);
-
-  if (!survey) {
-    throw new NotFoundError("진단 결과를 찾을 수 없습니다");
-  }
-
-  return {
-    skinType: survey.skinType,
-    concernType: survey.resultConcernType,
-    gender: survey.gender,
-    age: survey.age,
-    city: survey.city,
-    createdAt: survey.createdAt.toISOString(),
-  };
-}
-```
-
-### 2.5 라우터
-
-**파일**: `src/inbound/http/routes/surveys.ts`
-
-```typescript
-import { Router, Request, Response, NextFunction } from "express";
-import { SurveySubmitSchema } from "@/shared/schemas/surveys";
-import { ValidationError } from "@/shared/errors/AppError";
-import { submitSurvey } from "@/application/surveys/submitSurvey";
-import { getSurvey } from "@/application/surveys/getSurvey";
-import { sendSuccess } from "@/shared/utils/response";
-
-export const surveyRouter = Router();
-
-// POST /surveys
-surveyRouter.post(
-  "/",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const result = SurveySubmitSchema.safeParse(req.body);
-
-      if (!result.success) {
-        const fieldErrors = Object.fromEntries(
-          Object.entries(result.error.flatten().fieldErrors || {}).map(
-            ([key, errors]) => [key, errors ?? []],
-          ),
-        );
-        throw new ValidationError(fieldErrors);
-      }
-
-      const data = await submitSurvey(result.data);
-      sendSuccess(res, data, 200);
-    } catch (err) {
-      next(err);
-    }
-  },
-);
-
-// GET /surveys/:sessionId
-surveyRouter.get(
-  "/:sessionId",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const data = await getSurvey(req.params.sessionId);
-      sendSuccess(res, data, 200);
-    } catch (err) {
-      next(err);
-    }
-  },
-);
-```
-
-### 2.6 테스트
-
-**파일**: `src/inbound/http/routes/surveys.test.ts`
-
-```typescript
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import request from "supertest";
-import { app } from "@/app";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-describe("POST /surveys", () => {
-  beforeAll(async () => {
-    await prisma.$connect();
-  });
-
-  afterAll(async () => {
-    // 테스트 데이터 정리
-    await prisma.surveySubmission.deleteMany({});
-    await prisma.$disconnect();
-  });
-
-  it("필수값 누락 시 400 VALIDATION_ERROR를 반환한다", async () => {
-    const res = await request(app).post("/surveys").send({});
-
-    expect(res.status).toBe(400);
-    expect(res.body.success).toBe(false);
-    expect(res.body.error.code).toBe("VALIDATION_ERROR");
-    expect(res.body.error.details.fieldErrors.sessionId).toBeDefined();
-  });
-
-  it("유효한 설문을 저장하고 결과를 반환한다", async () => {
-    const res = await request(app)
-      .post("/surveys")
-      .send({
-        sessionId: "test_session_123",
-        city: "Delhi",
-        gender: "Female",
-        age: "25-34",
-        skinType: "Oily",
-        concerns: "Acne",
-        photoUploaded: false,
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.resultSkinType).toBe("Oily");
-    expect(res.body.data.resultConcernType).toBe("Acne");
-  });
-
-  it("'Uneven skin tone' → 'Tone'로 정규화한다", async () => {
-    const res = await request(app)
-      .post("/surveys")
-      .send({
-        sessionId: "test_session_tone",
-        concerns: "Uneven skin tone",
-        photoUploaded: false,
-      });
-
-    expect(res.body.data.resultConcernType).toBe("Tone");
-  });
-
-  it("'Acne marks' → 'Marks'로 정규화한다", async () => {
-    const res = await request(app)
-      .post("/surveys")
-      .send({
-        sessionId: "test_session_marks",
-        concerns: "Acne marks",
-        photoUploaded: false,
-      });
-
-    expect(res.body.data.resultConcernType).toBe("Marks");
-  });
-});
-
-describe("GET /surveys/:sessionId", () => {
-  beforeAll(async () => {
-    await prisma.$connect();
-    // 테스트용 데이터 생성
-    await prisma.surveySubmission.create({
-      data: {
-        sessionId: "test_get_session",
-        skinType: "Dry",
-        resultSkinType: "Dry",
-        resultConcernType: "Pigmentation",
-        photoUploaded: false,
-      },
-    });
-  });
-
-  afterAll(async () => {
-    await prisma.surveySubmission.deleteMany({});
-    await prisma.$disconnect();
-  });
-
-  it("존재하는 sessionId의 설문을 조회한다", async () => {
-    const res = await request(app).get("/surveys/test_get_session");
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.skinType).toBe("Dry");
-    expect(res.body.data.concernType).toBe("Pigmentation");
-  });
-
-  it("존재하지 않는 sessionId는 404를 반환한다", async () => {
-    const res = await request(app).get("/surveys/nonexistent_session");
-
-    expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe("NOT_FOUND");
-  });
-});
-```
-
-### 2.7 실행
-
+### Step 6: 테스트 실행
 ```bash
-# 테스트 실행
-npm test -- src/inbound/http/routes/surveys.test.ts
-
-# 개발 서버 실행
-npm run dev
-
-# 수동 테스트
-curl -X POST http://localhost:4000/surveys \
-  -H "Content-Type: application/json" \
-  -d '{ "sessionId": "test", "concerns": "Acne", "photoUploaded": false }'
+npm test -- surveys.test.ts
 ```
 
 ---
 
 ## Phase 3: 루틴 API (2일)
 
-### 3.1 zod 스키마
+### 동일한 패턴 적용
 
-**파일**: `src/shared/schemas/routine.ts`
+**zod 스키마** (`src/shared/schemas/routine.ts`):
+- dateKey: YYYY-MM-DD 형식 검증
+- morning/evening: 정확히 4개 boolean 배열
 
-```typescript
-import { z } from "zod";
+**테스트** (`src/inbound/http/routes/routine.test.ts`):
+- GET: 루틴 존재 → startDate + checks 반환 / 없으면 404
+- PATCH: 새 날짜 생성 / 기존 날짜 업데이트
 
-// 날짜 검증: YYYY-MM-DD
-const DateKeySchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "YYYY-MM-DD 형식이어야 합니다");
+**Repository** (`src/outbound/persistence/routineRepository.ts`):
+- `findBySessionId(sessionId)`: 모든 RoutineCheck 조회 후 날짜별로 그룹화
+- `upsert(sessionId, dateKey, data)`: 있으면 update, 없으면 create
 
-export const RoutineGetSchema = z.object({
-  sessionId: z.string().min(1),
-});
+**비즈니스 로직** (`src/application/routine/`):
+- getRoutine(): 없으면 NotFoundError
+- updateRoutine(): upsert 호출
 
-export const RoutineUpdateSchema = z.object({
-  sessionId: z.string().min(1),
-  dateKey: DateKeySchema,
-  morning: z.array(z.boolean()).length(4, "아침 체크는 정확히 4개여야 합니다"),
-  evening: z.array(z.boolean()).length(4, "저녁 체크는 정확히 4개여야 합니다"),
-});
-
-export type RoutineGetInput = z.infer<typeof RoutineGetSchema>;
-export type RoutineUpdateInput = z.infer<typeof RoutineUpdateSchema>;
-```
-
-### 3.2 루틴 로직
-
-**파일**: `src/application/routine/getRoutine.ts`
-
-```typescript
-import { RoutineRepository } from "@/outbound/persistence/routineRepository";
-import { NotFoundError } from "@/shared/errors/AppError";
-
-export async function getRoutine(sessionId: string) {
-  const routine = await RoutineRepository.findBySessionId(sessionId);
-
-  if (!routine) {
-    throw new NotFoundError("루틴을 시작하지 않았습니다");
-  }
-
-  return routine;
-}
-```
-
-**파일**: `src/application/routine/updateRoutine.ts`
-
-```typescript
-import { RoutineRepository } from "@/outbound/persistence/routineRepository";
-import type { RoutineUpdateInput } from "@/shared/schemas/routine";
-
-export async function updateRoutine(input: RoutineUpdateInput) {
-  const result = await RoutineRepository.upsert(
-    input.sessionId,
-    input.dateKey,
-    {
-      morning: input.morning,
-      evening: input.evening,
-    },
-  );
-
-  return {
-    dateKey: result.dateKey,
-    morning: result.morning,
-    evening: result.evening,
-  };
-}
-```
-
-### 3.3 라우터
-
-**파일**: `src/inbound/http/routes/routine.ts`
-
-```typescript
-import { Router, Request, Response, NextFunction } from "express";
-import { RoutineUpdateSchema, RoutineGetSchema } from "@/shared/schemas/routine";
-import { ValidationError } from "@/shared/errors/AppError";
-import { getRoutine } from "@/application/routine/getRoutine";
-import { updateRoutine } from "@/application/routine/updateRoutine";
-import { sendSuccess } from "@/shared/utils/response";
-
-export const routineRouter = Router();
-
-// GET /routine/:sessionId
-routineRouter.get(
-  "/:sessionId",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const result = RoutineGetSchema.safeParse({
-        sessionId: req.params.sessionId,
-      });
-
-      if (!result.success) {
-        const fieldErrors = Object.fromEntries(
-          Object.entries(result.error.flatten().fieldErrors || {}).map(
-            ([key, errors]) => [key, errors ?? []],
-          ),
-        );
-        throw new ValidationError(fieldErrors);
-      }
-
-      const data = await getRoutine(result.data.sessionId);
-      sendSuccess(res, data, 200);
-    } catch (err) {
-      next(err);
-    }
-  },
-);
-
-// PATCH /routine/:sessionId
-routineRouter.patch(
-  "/:sessionId",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const result = RoutineUpdateSchema.safeParse({
-        sessionId: req.params.sessionId,
-        ...req.body,
-      });
-
-      if (!result.success) {
-        const fieldErrors = Object.fromEntries(
-          Object.entries(result.error.flatten().fieldErrors || {}).map(
-            ([key, errors]) => [key, errors ?? []],
-          ),
-        );
-        throw new ValidationError(fieldErrors);
-      }
-
-      const data = await updateRoutine(result.data);
-      sendSuccess(res, data, 200);
-    } catch (err) {
-      next(err);
-    }
-  },
-);
-```
-
-### 3.4 테스트
-
-**파일**: `src/inbound/http/routes/routine.test.ts`
-
-```typescript
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import request from "supertest";
-import { app } from "@/app";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-describe("GET /routine/:sessionId", () => {
-  beforeAll(async () => {
-    await prisma.$connect();
-    // 테스트 데이터
-    await prisma.routineCheck.create({
-      data: {
-        sessionId: "test_routine_session",
-        dateKey: "2026-07-14",
-        morning: [true, false, true, false],
-        evening: [true, true, false, false],
-      },
-    });
-  });
-
-  afterAll(async () => {
-    await prisma.routineCheck.deleteMany({});
-    await prisma.$disconnect();
-  });
-
-  it("루틴 데이터가 존재하면 조회한다", async () => {
-    const res = await request(app).get("/routine/test_routine_session");
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.checks["2026-07-14"]).toBeDefined();
-  });
-
-  it("루틴이 없으면 404를 반환한다", async () => {
-    const res = await request(app).get("/routine/nonexistent");
-
-    expect(res.status).toBe(404);
-    expect(res.body.error.code).toBe("NOT_FOUND");
-  });
-});
-
-describe("PATCH /routine/:sessionId", () => {
-  beforeAll(async () => {
-    await prisma.$connect();
-  });
-
-  afterAll(async () => {
-    await prisma.routineCheck.deleteMany({});
-    await prisma.$disconnect();
-  });
-
-  it("새로운 날짜 체크를 생성한다", async () => {
-    const res = await request(app)
-      .patch("/routine/test_patch_session")
-      .send({
-        dateKey: "2026-07-15",
-        morning: [true, true, false, true],
-        evening: [false, false, true, false],
-      });
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.data.dateKey).toBe("2026-07-15");
-  });
-
-  it("날짜 형식이 잘못되면 400을 반환한다", async () => {
-    const res = await request(app)
-      .patch("/routine/test_session")
-      .send({
-        dateKey: "07-14-2026",
-        morning: [true, false, true, false],
-        evening: [true, true, false, false],
-      });
-
-    expect(res.status).toBe(400);
-    expect(res.body.error.code).toBe("VALIDATION_ERROR");
-  });
-});
-```
+**라우터** (`src/inbound/http/routes/routine.ts`):
+- GET /routine/:sessionId
+- PATCH /routine/:sessionId
 
 ---
 
-## Phase 4: 앱 통합
+## Phase 4: 통합 및 테스트
 
-### 4.1 app.ts 최종 업데이트
-
-**파일**: `src/app.ts`
-
+### app.ts에 모든 라우터 마운트
 ```typescript
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import { surveyRouter } from "./inbound/http/routes/surveys";
-import { routineRouter } from "./inbound/http/routes/routine";
-import { errorHandler } from "./inbound/http/middleware/errorHandler";
-
-dotenv.config();
-
-export const app = express();
-
-// 미들웨어
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? "http://localhost:3000" }));
-app.use(express.json());
-
-// 라우터
 app.use("/surveys", surveyRouter);
 app.use("/routine", routineRouter);
-
-// 에러 핸들러
 app.use(errorHandler);
 ```
 
-### 4.2 전체 테스트 실행
-
+### 전체 테스트 실행
 ```bash
 npm test
 ```
 
+모든 테스트가 통과하면 준비 완료.
+
 ---
 
-## 다음 단계
+## 파일 체크리스트
 
-- 프론트 연동: [05-FRONTEND-CHANGES.md](./05-FRONTEND-CHANGES.md)
-- 배포: [06-DEPLOYMENT.md](./06-DEPLOYMENT.md)
+| 파일 | 역할 |
+|------|------|
+| `src/shared/errors/AppError.ts` | 에러 클래스 정의 |
+| `src/shared/utils/response.ts` | 성공 응답 유틸 |
+| `src/shared/utils/normalize.ts` | toConcernKey() 함수 |
+| `src/shared/schemas/surveys.ts` | SurveySubmitSchema |
+| `src/shared/schemas/routine.ts` | RoutineUpdateSchema |
+| `src/inbound/http/middleware/errorHandler.ts` | 에러 미들웨어 |
+| `src/inbound/http/routes/surveys.ts` | POST/GET /surveys |
+| `src/inbound/http/routes/routine.ts` | GET/PATCH /routine |
+| `src/inbound/http/routes/surveys.test.ts` | 설문 API 테스트 |
+| `src/inbound/http/routes/routine.test.ts` | 루틴 API 테스트 |
+| `src/application/surveys/submitSurvey.ts` | 설문 저장 로직 |
+| `src/application/surveys/getSurvey.ts` | 설문 조회 로직 |
+| `src/application/routine/getRoutine.ts` | 루틴 조회 로직 |
+| `src/application/routine/updateRoutine.ts` | 루틴 업데이트 로직 |
+| `src/outbound/persistence/surveyRepository.ts` | Survey DB 접근 |
+| `src/outbound/persistence/routineRepository.ts` | Routine DB 접근 |
+
+---
+
+## 개발 팁
+
+### vitest + supertest 사용법
+- vitest: 프론트와 동일한 테스트 프레임워크
+- supertest: Express 앱을 테스트하는 도구 (실제 포트 불필요)
+- app.ts를 직접 import해서 `request(app).post/get/patch()` 호출
+
+### zod 에러 처리
+- `schema.safeParse(data)` 호출
+- 실패하면 `result.error.flatten().fieldErrors` 접근 (필드별 에러)
+- ValidationError throw
+
+### 테스트 데이터 관리
+- beforeAll: DB 연결 + 테스트 데이터 생성
+- afterAll: 테스트 데이터 정리 + 연결 해제
+- 각 테스트는 독립적으로 실행
+
+### 로컬 수동 테스트
+```bash
+npm run dev
+# 다른 터미널에서
+curl -X POST http://localhost:4000/surveys \
+  -H "Content-Type: application/json" \
+  -d '{"sessionId":"test","concerns":"Acne","photoUploaded":false}'
+```
+
+---
+
+## 다음: 프론트 연동
+
+**다음**: [05-FRONTEND-CHANGES.md](./05-FRONTEND-CHANGES.md) - 프론트엔드에서 API 호출

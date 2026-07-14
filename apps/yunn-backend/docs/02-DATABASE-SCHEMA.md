@@ -4,339 +4,153 @@
 
 ## 2.1 PostgreSQL 준비
 
-### 옵션 1: 로컬 PostgreSQL (권장: 개발 속도)
-```bash
-# macOS Homebrew
-brew install postgresql@15
-brew services start postgresql@15
+3가지 옵션이 있습니다. 팀 상황에 맞는 것을 선택하세요:
 
-# 기본 포트: 5432
-# 기본 사용자: postgres
-```
+| 옵션 | 방식 | 장점 | 단점 |
+|------|------|------|------|
+| **로컬** | Homebrew 또는 직설치 | 개발 속도 빠름 | 팀원 환경 차이 가능 |
+| **Docker** | 컨테이너 | 팀 일관성 좋음 | Docker 설치 필요 |
+| **Supabase** | 클라우드 | 배포처와 통일 가능 | 인터넷 필수 |
 
-### 옵션 2: Docker (권장: 팀 일관성)
-```bash
-docker run --name yunn-postgres \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=yunn_dev \
-  -p 5432:5432 \
-  -d postgres:15
-```
+**권장**: 로컬 또는 Docker 선택 (개발 속도 빠르고 비용 없음)
 
-### 옵션 3: Supabase (클라우드)
-- [supabase.com](https://supabase.com) 회원가입
-- 프로젝트 생성 → Connection string 복사
-- DATABASE_URL에 붙여넣기
+설치 후 연결 정보 확인:
+- Host: localhost
+- Port: 5432
+- User: postgres
+- Password: (설정한 것)
+- Database: yunn_dev (처음 생성 필요)
 
 ---
 
-## 2.2 Prisma 스키마 작성
+## 2.2 데이터 모델 정의
 
-**파일**: `prisma/schema.prisma`
+`prisma/schema.prisma` 파일에 2개 모델을 정의합니다.
 
-```prisma
-// 데이터베이스 설정
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
+### SurveySubmission (설문 제출)
+사용자가 완료한 설문 1건을 저장합니다.
 
-// Prisma Client 생성
-generator client {
-  provider = "prisma-client-js"
-}
+| 필드 | 설명 |
+|------|------|
+| id | 고유 ID (자동 생성) |
+| sessionId | 사용자 세션 ID (프론트의 yunn_session_id) |
+| city, gender, age, skinType, concerns 등 | 사용자 입력값 |
+| trigger | 배열 (humidity, stress 등) |
+| resultSkinType | 서버 계산 결과 (Oily/Dry/Combination/Normal) |
+| resultConcernType | 서버 계산 결과 (Acne/Marks/Pigmentation/Tone) |
+| createdAt | 저장 시각 (자동) |
 
-// ── 테이블 1: 설문 제출 ──────────────────────────────────────
-model SurveySubmission {
-  id                String   @id @default(cuid())
-  sessionId         String   // yunn_session_id
-  
-  // 설문 입력값
-  city              String?
-  gender            String?
-  age               String?
-  skinType          String?
-  concern           String?
-  trigger           String[]  // Postgres text[]
-  sensitivity       String?
-  outdoor           String?
-  sunscreen         String?
-  sleep             String?
-  stress            String?
-  routineLevel      String?
-  photoUploaded     Boolean  @default(false)
-  
-  // 계산 결과
-  resultSkinType    String   // "Oily", "Dry", "Combination", "Normal"
-  resultConcernType String   // "Acne", "Marks", "Pigmentation", "Tone"
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+sessionId는 인덱스 처리되어 빠른 조회 가능합니다.
 
-  // 인덱스 (sessionId로 빠른 조회)
-  @@index([sessionId])
-}
+### RoutineCheck (루틴 체크)
+특정 날짜의 루틴 체크 상태를 저장합니다.
 
-// ── 테이블 2: 루틴 체크 ──────────────────────────────────────
-model RoutineCheck {
-  id        String   @id @default(cuid())
-  sessionId String
-  dateKey   String   // "YYYY-MM-DD" 형식
-  
-  // 각 날짜별 아침/저녁 스텝 체크 (4스텝씩)
-  morning   Boolean[] @default([false, false, false, false])
-  evening   Boolean[] @default([false, false, false, false])
-  
-  updatedAt DateTime @updatedAt
+| 필드 | 설명 |
+|------|------|
+| id | 고유 ID |
+| sessionId | 사용자 세션 ID |
+| dateKey | 날짜 (YYYY-MM-DD 형식) |
+| morning | 아침 4개 스텝 체크 [true/false, ...] |
+| evening | 저녁 4개 스텝 체크 [true/false, ...] |
 
-  // 유니크 제약: 한 세션의 한 날짜는 1개 row만
-  @@unique([sessionId, dateKey])
-}
-
-// ── 심화 단계에서 추가 (인증) ────────────────────────────────
-// model User {
-//   id           String   @id @default(cuid())
-//   email        String   @unique
-//   nickname     String
-//   passwordHash String
-//   createdAt    DateTime @default(now())
-// }
-```
+sessionId + dateKey 조합으로 유니크합니다 (한 날짜는 1개 row만).
 
 ---
 
-## 2.3 DBeaver 연결 설정
+## 2.3 DBeaver 설정
 
-### DBeaver 다운로드
-- [dbeaver.io](https://dbeaver.io) → Community Edition 다운로드
-- 설치 후 실행
+DBeaver는 PostgreSQL을 그래픽 인터페이스로 관리하는 도구입니다 (선택사항이지만 권장).
 
-### PostgreSQL 연결 추가
+### 설치 및 연결
+1. [dbeaver.io](https://dbeaver.io)에서 Community Edition 다운로드
+2. 설치 후 실행
+3. Database → New Database Connection → PostgreSQL 선택
+4. 연결 정보 입력 (위의 Host, Port, User, Password, Database)
+5. "Test Connection" 클릭해서 성공 확인
 
-1. **상단 메뉴**: Database → New Database Connection
-2. **DB 선택**: PostgreSQL 선택 → Next
-3. **연결 정보 입력**:
-   ```
-   Server Host: localhost
-   Port: 5432
-   Database: yunn_dev        (생성 필요 시 별도 쿼리)
-   Username: postgres
-   Password: (설정한 비밀번호)
-   ```
-4. **테스트**: "Test Connection" → Success 확인
-5. **완료**: Finish
-
-### DBeaver에서 DB 생성 (처음 한 번)
+### DB 생성 (처음 한 번)
+DBeaver의 SQL 편집기에서:
 ```sql
-CREATE DATABASE yunn_dev
-  WITH ENCODING 'UTF8';
+CREATE DATABASE yunn_dev WITH ENCODING 'UTF8';
 ```
 
 ---
 
 ## 2.4 Prisma 마이그레이션
 
-### 마이그레이션 생성 및 실행
+Prisma는 스키마 정의를 읽고 SQL을 자동으로 생성해줍니다.
+
+### 마이그레이션 실행
 ```bash
-# 1. 초기 마이그레이션 생성
 npx prisma migrate dev --name init
-
-# 입력 프롬프트:
-# ✔ Name of migration › init
-# ✔ Applying migration `20260714000000_init`
 ```
 
-**결과**:
-- `prisma/migrations/` 폴더 생성
-- PostgreSQL에 `SurveySubmission`, `RoutineCheck` 테이블 생성
+이 명령은:
+1. schema.prisma 읽기
+2. SQL 파일 생성 (prisma/migrations/ 폴더)
+3. PostgreSQL에 테이블 생성
+4. Prisma Client 자동 생성
 
-### DBeaver에서 확인
-```sql
--- DBeaver SQL 쿼리
-SELECT * FROM "SurveySubmission";
-SELECT * FROM "RoutineCheck";
-```
+### 결과 확인
+DBeaver에서 "SurveySubmission", "RoutineCheck" 테이블이 생성됐는지 확인합니다.
 
 ---
 
-## 2.5 Prisma Client 생성
+## 2.5 Repository 패턴
 
-```bash
-npx prisma generate
-```
+DB 접근은 Repository 패턴으로 하나의 레이어로 모읍니다.
 
-**생성 파일**: `node_modules/.prisma/client`
+### 구조
+`src/outbound/persistence/` 폴더에:
+- `surveyRepository.ts`: SurveySubmission 관련 쿼리
+- `routineRepository.ts`: RoutineCheck 관련 쿼리
 
----
+각 Repository는:
+- `create()`: 데이터 저장
+- `findLatestBySessionId()`: 최신 데이터 조회
+- `upsert()`: 있으면 업데이트, 없으면 생성
 
-## 2.6 데이터 접근 레이어 (Repository)
-
-**파일**: `src/outbound/persistence/surveyRepository.ts`
-
-```typescript
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-export const SurveyRepository = {
-  async create(data: {
-    sessionId: string;
-    city?: string;
-    gender?: string;
-    age?: string;
-    skinType?: string;
-    concern?: string;
-    trigger?: string[];
-    sensitivity?: string;
-    outdoor?: string;
-    sunscreen?: string;
-    sleep?: string;
-    stress?: string;
-    routineLevel?: string;
-    photoUploaded: boolean;
-    resultSkinType: string;
-    resultConcernType: string;
-  }) {
-    return prisma.surveySubmission.create({ data });
-  },
-
-  async findLatestBySessionId(sessionId: string) {
-    return prisma.surveySubmission.findFirst({
-      where: { sessionId },
-      orderBy: { createdAt: "desc" },
-    });
-  },
-};
-```
-
-**파일**: `src/outbound/persistence/routineRepository.ts`
-
-```typescript
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-export const RoutineRepository = {
-  async findBySessionId(sessionId: string) {
-    const checks = await prisma.routineCheck.findMany({
-      where: { sessionId },
-    });
-    
-    if (checks.length === 0) return null;
-
-    // { dateKey: { morning, evening } } 형태로 변환
-    return {
-      startDate: checks[0].createdAt.toISOString().split('T')[0],
-      checks: checks.reduce(
-        (acc, check) => ({
-          ...acc,
-          [check.dateKey]: {
-            morning: check.morning,
-            evening: check.evening,
-          },
-        }),
-        {}
-      ),
-    };
-  },
-
-  async upsert(sessionId: string, dateKey: string, data: {
-    morning?: boolean[];
-    evening?: boolean[];
-  }) {
-    return prisma.routineCheck.upsert({
-      where: { sessionId_dateKey: { sessionId, dateKey } },
-      update: data,
-      create: {
-        sessionId,
-        dateKey,
-        ...data,
-      },
-    });
-  },
-};
-```
+이렇게 분리하면 테스트하기 쉽고, 나중에 DB를 바꿀 때도 이 파일들만 수정하면 됩니다.
 
 ---
 
-## 2.7 연결 테스트
+## 2.6 마이그레이션 관리
 
-**파일**: `src/lib/db.test.ts`
-
-```typescript
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-describe("Database Connection", () => {
-  beforeAll(async () => {
-    await prisma.$connect();
-  });
-
-  afterAll(async () => {
-    await prisma.$disconnect();
-  });
-
-  it("데이터베이스에 연결되어야 한다", async () => {
-    // PostgreSQL 버전 확인
-    const version = await prisma.$queryRaw`SELECT version()`;
-    expect(version).toBeDefined();
-  });
-
-  it("SurveySubmission 테이블이 존재해야 한다", async () => {
-    // 테이블 존재 확인
-    const tables = await prisma.$queryRaw`
-      SELECT table_name FROM information_schema.tables 
-      WHERE table_schema = 'public' AND table_name = 'SurveySubmission'
-    `;
-    expect(tables).toBeDefined();
-  });
-});
-```
-
-**테스트 실행**:
-```bash
-npm test -- src/lib/db.test.ts
-```
-
----
-
-## 2.8 마이그레이션 관리
-
-### 마이그레이션 히스토리 확인
+### 히스토리 확인
 ```bash
 npx prisma migrate status
 ```
 
-### 새 필드 추가 (나중에)
-```bash
-# schema.prisma 수정 후
-npx prisma migrate dev --name add_new_field
+실행된 마이그레이션 목록을 확인할 수 있습니다.
 
-# 생성된 SQL 파일: prisma/migrations/20260714_add_new_field/migration.sql
+### 새 필드 추가 (나중에)
+schema.prisma를 수정한 후:
+```bash
+npx prisma migrate dev --name describe_your_change
 ```
 
-### 마이그레이션 초기화 (개발 중에만)
+새 마이그레이션 파일이 자동 생성되고 DB에 적용됩니다.
+
+### 개발 중 초기화 (주의)
+로컬에서만 (프로덕션 절대 금지):
 ```bash
-# ⚠️ 주의: 모든 데이터 삭제
 npx prisma migrate reset
 ```
+모든 데이터를 삭제하고 마이그레이션을 처음부터 재실행합니다.
 
 ---
 
-## 2.9 Prisma Studio (선택사항)
+## 2.7 Prisma Studio (선택)
 
-DB를 GUI로 관리하고 싶을 때:
-
+PostgreSQL을 GUI로 보고 싶을 때:
 ```bash
 npx prisma studio
-# http://localhost:5555 자동 오픈
 ```
+
+http://localhost:5555 에서 데이터를 시각적으로 관리할 수 있습니다.
 
 ---
 
 ## 다음: API 스펙 정의
 
-**다음**: [03-API-SPECS.md](./03-API-SPECS.md) - 4개 API의 상세 요청/응답 정의
+**다음**: [03-API-SPECS.md](./03-API-SPECS.md) - 4개 API의 요청/응답 명세
