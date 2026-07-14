@@ -1,11 +1,5 @@
-import { PrismaClient } from "../../generated/prisma/client.js";
 import type { Prisma } from "../../generated/prisma/client.js";
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const prisma = new PrismaClient({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) as any,
-});
+import prisma from "../../shared/lib/prisma.js";
 
 export class SurveyRepository {
   // 설문 데이터 저장

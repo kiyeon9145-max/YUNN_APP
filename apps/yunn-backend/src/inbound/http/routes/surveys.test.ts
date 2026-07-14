@@ -4,6 +4,47 @@ import { createApp } from "../../../app.js";
 describe("POST /surveys", () => {
   const app = createApp();
 
+  // 에러 케이스 1: 필수값(sessionId) 누락 시 VALIDATION_ERROR 반환
+  it("should return VALIDATION_ERROR when sessionId is missing", async () => {
+    const response = await request(app)
+      .post("/surveys")
+      .send({
+        photoUploaded: false,
+        // sessionId 누락
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      success: false,
+      error: expect.objectContaining({
+        code: "VALIDATION_ERROR",
+        details: expect.objectContaining({
+          fieldErrors: expect.objectContaining({
+            sessionId: expect.any(Array),
+          }),
+        }),
+      }),
+    });
+  });
+
+  // 에러 케이스 2: 필수값(photoUploaded) 누락 시 VALIDATION_ERROR 반환
+  it("should return VALIDATION_ERROR when photoUploaded is missing", async () => {
+    const response = await request(app)
+      .post("/surveys")
+      .send({
+        sessionId: "test_session",
+        // photoUploaded 누락
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      success: false,
+      error: expect.objectContaining({
+        code: "VALIDATION_ERROR",
+      }),
+    });
+  });
+
   // 해피패스: 유효한 설문 완료 시 resultSkinType과 resultConcernType 반환
   it("should save survey and return result types", async () => {
     const response = await request(app)
@@ -61,6 +102,22 @@ describe("POST /surveys", () => {
 
 describe("GET /surveys/:sessionId", () => {
   const app = createApp();
+
+  // 에러 케이스: 존재하지 않는 sessionId 조회 시 NOT_FOUND 반환
+  it("should return NOT_FOUND when survey does not exist", async () => {
+    const response = await request(app).get(
+      "/surveys/nonexistent_session_id"
+    );
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({
+      success: false,
+      error: expect.objectContaining({
+        code: "NOT_FOUND",
+        message: "진단 결과를 찾을 수 없습니다",
+      }),
+    });
+  });
 
   // 해피패스: 존재하는 sessionId 조회 시 설문 데이터 반환
   it("should return latest survey for existing sessionId", async () => {
