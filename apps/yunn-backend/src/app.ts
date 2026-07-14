@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { errorHandler } from "./inbound/http/middleware/errorHandler.js";
 import surveyRouter from "./inbound/http/routes/surveys.js";
+import routineRouter from "./inbound/http/routes/routine.js";
 
 export function createApp() {
   const app = express();
@@ -17,6 +18,7 @@ export function createApp() {
 
   // 라우터
   app.use("/surveys", surveyRouter);
+  app.use("/routine", routineRouter);
 
   // 에러 핸들러 (마지막에 등록)
   app.use(errorHandler);
