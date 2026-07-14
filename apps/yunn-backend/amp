@@ -1,8 +1,28 @@
-Loaded Prisma config from prisma.config.ts.
+FAIL src/inbound/http/routes/surveys.test.ts
+FAIL src/inbound/http/routes/surveys.test.ts
+  ● Test suite failed to run
 
-Loaded Prisma config from prisma.config.ts.
+    Cannot find module './inbound/http/middleware/errorHandler.js' from 'src/app.ts'
 
-Prisma schema loaded from prisma/schema.prisma.
-Prisma schema loaded from prisma/schema.prisma.
-Error: P1010: User was denied access on the database `(not available)`
-Error: P1010: User was denied access on the database `(not available)`
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/index.js:895:11)
+
+  ● Test suite failed to run
+
+    Cannot find module './inbound/http/middleware/errorHandler.js' from 'src/app.ts'
+
+      at Resolver._throwModNotFoundError (node_modules/jest-resolve/build/index.js:895:11)
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        0.302 s
+Ran all test suites matching surveys.test.ts.
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        0.302 s
+Ran all test suites matching surveys.test.ts.
+(node:55894) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:55894) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
