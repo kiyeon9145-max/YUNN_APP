@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "YUNN | Skin Analysis",
   description: "Personalized K-Beauty skin routine in 3 minutes",
   icons: {
-    icon: "/images/yunn_logo.png",
+    icon: "/favicon.png",
   },
 };
 
