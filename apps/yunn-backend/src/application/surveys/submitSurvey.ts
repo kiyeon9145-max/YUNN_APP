@@ -21,7 +21,7 @@ export async function submitSurvey(
     age: request.age ?? null,
     skinType: request.skinType ?? null,
     concerns: request.concerns ?? null,
-    ...(request.trigger && { trigger: request.trigger }),
+    trigger: request.trigger ?? [],
     sensitivity: request.sensitivity ?? null,
     outdoor: request.outdoor ?? null,
     sunscreen: request.sunscreen ?? null,
