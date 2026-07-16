@@ -79,7 +79,7 @@ describe("POST /surveys", () => {
       .post("/surveys")
       .send({
         sessionId: "test_session_invalid_sensitivity",
-        sensitivity: "Extremely sensitive",
+        sensitivity: "Ultra sensitive",
         photoUploaded: false,
       });
 
@@ -182,7 +182,7 @@ describe("POST /surveys", () => {
 
   // 문제점 7: Enum 모든 값 - sensitivity
   it("should accept all valid sensitivity values", async () => {
-    const sensitivities = ["Normal", "Sensitive", "Very sensitive"];
+    const sensitivities = ["Rarely", "Sometimes", "Easily", "Very sensitive"];
 
     for (const sensitivity of sensitivities) {
       const response = await request(app)
@@ -199,7 +199,7 @@ describe("POST /surveys", () => {
 
   // 문제점 7: Enum 모든 값 - sunscreen
   it("should accept all valid sunscreen values", async () => {
-    const sunscreens = ["Always", "Sometimes", "Rarely", "Never"];
+    const sunscreens = ["Every day", "Most days", "Occasionally", "Rarely"];
 
     for (const sunscreen of sunscreens) {
       const response = await request(app)
@@ -233,7 +233,7 @@ describe("POST /surveys", () => {
 
   // 문제점 7: Enum 모든 값 - routineLevel
   it("should accept all valid routineLevel values", async () => {
-    const routineLevels = ["Beginner", "Intermediate", "Advanced"];
+    const routineLevels = ["Nothing", "Wash only", "Basic", "Multi"];
 
     for (const routineLevel of routineLevels) {
       const response = await request(app)

@@ -11,18 +11,18 @@ export const SurveySubmitSchema = z.object({
   concerns: z.string().optional(),
   trigger: z.array(z.string()).optional(),
   sensitivity: z
-    .enum(["Normal", "Sensitive", "Very sensitive"])
+    .enum(["Rarely", "Sometimes", "Easily", "Very sensitive"])
     .optional(),
   outdoor: z.string().optional(),
   sunscreen: z
-    .enum(["Always", "Sometimes", "Rarely", "Never"])
+    .enum(["Every day", "Most days", "Occasionally", "Rarely"])
     .optional(),
   sleep: z.string().optional(),
   stress: z
     .enum(["Low", "Medium", "High", "Very high"])
     .optional(),
   routineLevel: z
-    .enum(["Beginner", "Intermediate", "Advanced"])
+    .enum(["Nothing", "Wash only", "Basic", "Multi"])
     .optional(),
   photoUploaded: z.boolean(),
 });
