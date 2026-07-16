@@ -1,0 +1,447 @@
+openapi: 3.0.0
+info:
+  title: YUNN 백엔드 REST API
+  description: |
+    설문과 루틴 추적 기능을 제공하는 REST API
+
+    ## 주요 특징
+    - 설문 데이터 저장 및 조회
+    - 루틴 체크 추적 (아침/저녁)
+    - sessionId 기반 사용자 구분
+    - 유효성 검사 및 에러 처리
+
+    ## 데이터 흐름
+    1. 사용자가 설문 완료 → POST /surveys
+    2. 결과 조회 → GET /surveys/:sessionId
+    3. 루틴 시작 → PATCH /routine/:sessionId
+    4. 루틴 진행 상황 조회 → GET /routine/:sessionId
+  version: 1.0.0
+  contact:
+    name: YUNN 개발팀
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:4000
+    description: 로컬 개발 서버
+  - url: https://api.yunn.app
+    description: 프로덕션 서버
+
+paths:
+  /health:
+    get:
+      summary: 헬스 체크
+      description: API 서버 상태 확인
+      tags:
+        - System
+      responses:
+        '200':
+          description: 서버 정상 작동
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: ok
+
+  /surveys:
+    post:
+      summary: 설문 제출
+      description: |
+        사용자의 설문 답변을 저장합니다.
+
+        ## 필수 필드
+        - sessionId: 사용자 세션 ID (1-255자)
+        - photoUploaded: 사진 업로드 여부
+
+        ## 선택 필드
+        - gender: "Male" | "Female" | "Other"
+        - age: "10-19" | "20-29" | "30-39" | "40-49" | "50-59" | "60+"
+        - city: 거주 도시
+        - skinType: "Dry" | "Combination" | "Oily" | "Normal"
+        - concerns: 주요 피부 고민
+        - trigger: 악화 요인 배열
+        - sensitivity: "Normal" | "Sensitive" | "Very sensitive"
+        - outdoor: 야외 활동 빈도
+        - sunscreen: 자외선 차단 습관 ("Always" | "Sometimes" | "Rarely" | "Never")
+        - sleep: 수면 시간
+        - stress: 스트레스 정도 ("Low" | "Medium" | "High" | "Very high")
+        - routineLevel: 스킨케어 수준 ("Beginner" | "Intermediate" | "Advanced")
+      tags:
+        - Surveys
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sessionId
+                - photoUploaded
+              properties:
+                sessionId:
+                  type: string
+                  description: 사용자 세션 ID
+                  example: "user_123_abc"
+                photoUploaded:
+                  type: boolean
+                  example: true
+                gender:
+                  type: string
+                  example: Male
+                age:
+                  type: string
+                  example: "30-39"
+                city:
+                  type: string
+                  example: Seoul
+                skinType:
+                  type: string
+                  example: Oily
+                concerns:
+                  type: string
+                  example: "Acne"
+                trigger:
+                  type: array
+                  items:
+                    type: string
+                  example: ["Stress", "Weather"]
+                sensitivity:
+                  type: string
+                  example: Sensitive
+                outdoor:
+                  type: string
+                  example: "1-2 times a week"
+                sunscreen:
+                  type: string
+                  example: Always
+                sleep:
+                  type: string
+                  example: "6-8 hours"
+                stress:
+                  type: string
+                  example: Medium
+                routineLevel:
+                  type: string
+                  example: Intermediate
+      responses:
+        '200':
+          description: 설문 저장 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      resultSkinType:
+                        type: string
+                        example: Oily
+                      resultConcernType:
+                        type: string
+                        example: Acne
+        '400':
+          description: 입력값 검증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: 서버 에러
+
+  /surveys/{sessionId}:
+    get:
+      summary: 설문 결과 조회
+      description: |
+        세션 ID로 최근 설문 결과를 조회합니다.
+        해당 세션의 설문이 여러 개 있으면 가장 최신 데이터를 반환합니다.
+      tags:
+        - Surveys
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 사용자 세션 ID
+          example: "user_123_abc"
+      responses:
+        '200':
+          description: 설문 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      skinType:
+                        type: string
+                        example: Oily
+                      concernType:
+                        type: string
+                        example: Acne
+                      gender:
+                        type: string
+                      age:
+                        type: string
+                      city:
+                        type: string
+                      photoUploaded:
+                        type: boolean
+                      createdAt:
+                        type: string
+                        format: date-time
+        '400':
+          description: 입력값 검증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '404':
+          description: 설문을 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+
+  /routine/{sessionId}:
+    patch:
+      summary: 루틴 체크 저장/업데이트
+      description: |
+        특정 날짜의 루틴 체크를 저장합니다.
+        같은 sessionId와 dateKey로 요청하면 기존 데이터를 덮어씁니다 (Upsert).
+
+        ## 날짜 형식
+        - YYYY-MM-DD (UTC 기준)
+        - 예: 2026-07-14
+        - 유효하지 않은 날짜는 거부 (2026-02-30, 2025-02-29 등)
+      tags:
+        - Routine
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 사용자 세션 ID (1-255자)
+          example: "user_123_abc"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dateKey
+                - morning
+                - evening
+              properties:
+                dateKey:
+                  type: string
+                  description: 루틴 날짜 (YYYY-MM-DD)
+                  example: "2026-07-14"
+                morning:
+                  type: array
+                  items:
+                    type: boolean
+                  minItems: 4
+                  maxItems: 4
+                  description: 아침 루틴 체크 (정확히 4개)
+                  example: [true, false, true, false]
+                evening:
+                  type: array
+                  items:
+                    type: boolean
+                  minItems: 4
+                  maxItems: 4
+                  description: 저녁 루틴 체크 (정확히 4개)
+                  example: [true, true, false, true]
+      responses:
+        '200':
+          description: 루틴 저장 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      dateKey:
+                        type: string
+                        example: "2026-07-14"
+                      morning:
+                        type: array
+                        items:
+                          type: boolean
+                        example: [true, false, true, false]
+                      evening:
+                        type: array
+                        items:
+                          type: boolean
+                        example: [true, true, false, true]
+        '400':
+          description: 입력값 검증 실패 (잘못된 날짜, 배열 크기 등)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: 서버 에러
+
+    get:
+      summary: 루틴 데이터 조회
+      description: |
+        세션의 모든 루틴 데이터를 조회합니다.
+        시작일(startDate)과 각 날짜별 체크 현황을 반환합니다.
+      tags:
+        - Routine
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 사용자 세션 ID (1-255자)
+          example: "user_123_abc"
+      responses:
+        '200':
+          description: 루틴 데이터 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      startDate:
+                        type: string
+                        description: 루틴 시작일 (가장 오래된 데이터의 날짜)
+                        example: "2026-07-01"
+                      checks:
+                        type: object
+                        description: 날짜별 루틴 체크 (chronological order)
+                        additionalProperties:
+                          type: object
+                          properties:
+                            morning:
+                              type: array
+                              items:
+                                type: boolean
+                              example: [true, false, true, false]
+                            evening:
+                              type: array
+                              items:
+                                type: boolean
+                              example: [true, true, false, true]
+                        example:
+                          "2026-07-01":
+                            morning: [true, false, true, false]
+                            evening: [true, true, false, true]
+                          "2026-07-02":
+                            morning: [false, true, false, true]
+                            evening: [false, false, false, false]
+        '400':
+          description: 입력값 검증 실패
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '404':
+          description: 루틴 데이터를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+
+components:
+  schemas:
+    ValidationError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum: [VALIDATION_ERROR]
+            message:
+              type: string
+              example: "입력값 검증 실패"
+            details:
+              type: object
+              properties:
+                fieldErrors:
+                  type: object
+                  description: 필드별 에러 메시지
+                  example:
+                    dateKey:
+                      - "유효하지 않은 날짜입니다"
+                    morning:
+                      - "정확히 4개 요소여야 합니다"
+
+    NotFoundError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum: [NOT_FOUND]
+            message:
+              type: string
+              example: "설문을 찾을 수 없습니다"
+
+    ServerError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum: [SERVER_ERROR]
+            message:
+              type: string
+              example: "서버 오류가 발생했습니다"
+
+tags:
+  - name: System
+    description: 서버 상태 확인
+  - name: Surveys
+    description: 설문 관련 API
+  - name: Routine
+    description: 루틴 추적 API

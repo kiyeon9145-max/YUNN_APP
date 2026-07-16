@@ -10,6 +10,12 @@ export default {
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.mjs"],
   transform: {
-    ...tsJestTransformCfg,
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        ...tsJestTransformCfg["^.+\\.tsx?$"],
+        tsconfig: "tsconfig.test.json",
+      },
+    ],
   },
 };
