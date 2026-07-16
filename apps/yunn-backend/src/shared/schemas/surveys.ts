@@ -3,7 +3,7 @@ import { z } from "zod";
 export const SurveySubmitSchema = z.object({
   sessionId: z.string().min(1, "필수 입력값입니다"),
   city: z.string().optional(),
-  gender: z.enum(["Male", "Female", "Other"]).optional(),
+  gender: z.enum(["Male", "Female", "Prefer not to say"]).optional(),
   age: z.string().optional(),
   skinType: z
     .enum(["Oily", "Dry", "Combination", "Normal"])
