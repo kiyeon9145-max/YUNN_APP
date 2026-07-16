@@ -8,13 +8,16 @@ const surveyRepository = new SurveyRepository();
 export async function submitSurvey(
   request: SurveySubmitRequest
 ): Promise<{ resultSkinType: string | null; resultConcernType: string | null; sessionId: string; createdAt: string }> {
-  // resultSkinType은 skinType과 동일
-  const resultSkinType = request.skinType || null;
-  // resultConcernType은 concerns를 정규화
-  const resultConcernType = toConcernKey(request.concerns) || null;
+  try {
+    // resultSkinType은 skinType과 동일
+    const resultSkinType = request.skinType || null;
+    // resultConcernType은 concerns를 정규화
+    const resultConcernType = toConcernKey(request.concerns) || null;
 
-  // DB에 저장
-  const survey = await surveyRepository.create({
+    console.log("[submitSurvey] Saving survey:", { sessionId: request.sessionId, trigger: request.trigger });
+
+    // DB에 저장
+    const survey = await surveyRepository.create({
     sessionId: request.sessionId,
     city: request.city ?? null,
     gender: request.gender ?? null,
@@ -33,10 +36,16 @@ export async function submitSurvey(
     resultConcernType,
   });
 
-  return {
-    resultSkinType,
-    resultConcernType,
-    sessionId: survey.sessionId,
-    createdAt: survey.createdAt.toISOString(),
-  };
+    console.log("[submitSurvey] Survey saved successfully:", survey.sessionId);
+
+    return {
+      resultSkinType,
+      resultConcernType,
+      sessionId: survey.sessionId,
+      createdAt: survey.createdAt.toISOString(),
+    };
+  } catch (error) {
+    console.error("[submitSurvey] Error:", error);
+    throw error;
+  }
 }
