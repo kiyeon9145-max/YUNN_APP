@@ -62,6 +62,7 @@ export default function ResultScreen({ answers, onRetake }: ResultScreenProps) {
     "morning",
   );
   const [variant, setVariant] = useState<"A" | "B">("A");
+  const [going, setGoing] = useState(false);
 
   // 쿠키에서 A/B variant 읽기 (middleware에서 이미 설정됨)
   useEffect(() => {
@@ -98,9 +99,15 @@ export default function ResultScreen({ answers, onRetake }: ResultScreenProps) {
   }, [answers.city, data, variant]);
 
   // 설문 결과를 localStorage에 저장해 /routine이 읽을 수 있게 한 뒤 이동
+  // Lead 이벤트는 정확히 1회만 발화 (더블클릭 방지)
   const handleUnlockRoutine = useCallback(() => {
+    // 더블클릭 방지
+    if (going) return;
+    setGoing(true);
+
     // 14일 루틴 CTA 클릭은 결과 확인 후 루틴 진입 의향을 보는 핵심 지표다.
-    window.fbq?.('track', 'Lead')
+    window.fbq?.('track', 'Lead');
+
     trackEvent("routine_cta_click", {
       source: "result_screen",
       skin_type: data.skinType,
@@ -114,8 +121,12 @@ export default function ResultScreen({ answers, onRetake }: ResultScreenProps) {
       name: data.name,
       email: answers.email || "",
     });
-    router.push("/routine/intro");
-  }, [data, answers.email, router, variant]);
+
+    // fbq 전송 여유를 위해 300ms 지연 후 이동
+    setTimeout(() => {
+      router.push("/routine/intro");
+    }, 300);
+  }, [data, answers.email, router, variant, going]);
 
   const faceImage =
     answers.photoDataUrl ||
@@ -166,7 +177,7 @@ export default function ResultScreen({ answers, onRetake }: ResultScreenProps) {
             activePeriod={activePeriod}
             onTabChange={setActivePeriod}
           />
-          <ProductsSection onRetake={onRetake} onUnlockRoutine={handleUnlockRoutine} variant={variant} />
+          <ProductsSection onRetake={onRetake} onUnlockRoutine={handleUnlockRoutine} variant={variant} isLoading={going} />
         </div>
 
         <BottomNav onRetake={onRetake} />
@@ -557,10 +568,12 @@ function ProductsSection({
   onRetake,
   onUnlockRoutine,
   variant,
+  isLoading,
 }: {
   onRetake: () => void;
   onUnlockRoutine: () => void;
   variant: "A" | "B";
+  isLoading: boolean;
 }) {
   return (
     <section className="mt-[27px]">
@@ -607,7 +620,7 @@ function ProductsSection({
             Build healthier skin with a personalized 14-day skincare routine,
             daily guidance, and expert tips based on your results.
           </p>
-          <ResultCtaButton onClick={onUnlockRoutine}>
+          <ResultCtaButton onClick={onUnlockRoutine} disabled={isLoading}>
             <span>Get My 14-Day Plan</span>
             <i className="ph ph-arrow-right"></i>
           </ResultCtaButton>
@@ -670,7 +683,7 @@ function ProductsSection({
           <div className="border-t border-dashed border-[#E5E7EB] my-4" />
 
           {/* 하단: CTA 버튼 */}
-          <ResultCtaButton onClick={onUnlockRoutine}>
+          <ResultCtaButton onClick={onUnlockRoutine} disabled={isLoading}>
             <span>Get My 14-Day Plan</span>
             <i className="ph ph-arrow-right"></i>
           </ResultCtaButton>

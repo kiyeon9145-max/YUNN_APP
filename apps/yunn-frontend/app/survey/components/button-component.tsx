@@ -16,6 +16,7 @@ interface SurveyButtonProps {
 interface ResultCtaButtonProps {
   children: React.ReactNode;
   onClick: () => void;
+  disabled?: boolean;
 }
 
 interface SurveyActionsProps {
@@ -91,12 +92,17 @@ export function SurveyButton({
 }
 
 // 결과 화면의 14일 루틴 CTA 스타일을 한 곳에서 관리하기 위한 전용 버튼이다.
-export function ResultCtaButton({ children, onClick }: ResultCtaButtonProps) {
+export function ResultCtaButton({ children, onClick, disabled = false }: ResultCtaButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full h-[46px] rounded-[5px] bg-primary text-white text-[20px] font-bold flex items-center justify-center gap-2 cursor-pointer border-0"
+      disabled={disabled}
+      className={`w-full h-[46px] rounded-[5px] text-white text-[20px] font-bold flex items-center justify-center gap-2 border-0 transition-colors ${
+        disabled
+          ? 'bg-gray-400 cursor-not-allowed'
+          : 'bg-primary cursor-pointer'
+      }`}
     >
       {children}
     </button>
