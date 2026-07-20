@@ -178,7 +178,12 @@ export default function IntroScreen({ onStart }: IntroScreenProps) {
           <div>designed specifically for you.</div>
         </div>
 
-        <StartSurveyButton onClick={onStart} />
+        <StartSurveyButton
+          onClick={() => {
+            window.fbq?.('track', 'Lead')
+            onStart()
+          }}
+        />
 
         <div className="text-xs font-normal text-ink-muted text-center mt-4">
           Takes 3 minutes. Results in 24 hours.
