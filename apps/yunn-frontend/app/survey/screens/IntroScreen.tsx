@@ -15,6 +15,24 @@ interface IntroScreenProps {
 export default function IntroScreen({ onStart }: IntroScreenProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // fbq 초기화 대기 후 InitiateCheckout 발화 (중복 실행 방지)
+  const handleStartSurvey = () => {
+    if (isLoading) return;
+    setIsLoading(true);
+
+    // fbq가 준비되었을 때 정확히 1회 발화
+    if (window.fbq) {
+      window.fbq('track', 'InitiateCheckout');
+    }
+
+    // 픽셀 전송을 위해 최소 지연 후 다음 스텝 진행
+    setTimeout(() => {
+      onStart();
+      setIsLoading(false);
+    }, 100);
+  };
 
   return (
     <div className="w-full max-w-phone-max min-h-screen mx-auto bg-white relative pb-3">
@@ -43,7 +61,7 @@ export default function IntroScreen({ onStart }: IntroScreenProps) {
                 type="button"
                 onClick={() => {
                   setMenuOpen(false);
-                  onStart();
+                  handleStartSurvey();
                 }}
                 className="block w-full cursor-pointer px-4 py-3 text-left text-sm text-black transition-colors hover:bg-primary-light"
               >
@@ -178,12 +196,7 @@ export default function IntroScreen({ onStart }: IntroScreenProps) {
           <div>designed specifically for you.</div>
         </div>
 
-        <StartSurveyButton
-          onClick={() => {
-            window.fbq?.('track', 'Lead')
-            onStart()
-          }}
-        />
+        <StartSurveyButton onClick={handleStartSurvey} />
 
         <div className="text-xs font-normal text-ink-muted text-center mt-4">
           Takes 3 minutes. Results in 24 hours.

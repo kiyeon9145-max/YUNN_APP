@@ -100,7 +100,7 @@ export default function ResultScreen({ answers, onRetake }: ResultScreenProps) {
   // 설문 결과를 localStorage에 저장해 /routine이 읽을 수 있게 한 뒤 이동
   const handleUnlockRoutine = useCallback(() => {
     // 14일 루틴 CTA 클릭은 결과 확인 후 루틴 진입 의향을 보는 핵심 지표다.
-    window.fbq?.('track', 'InitiateCheckout')
+    window.fbq?.('track', 'Lead')
     trackEvent("routine_cta_click", {
       source: "result_screen",
       skin_type: data.skinType,
