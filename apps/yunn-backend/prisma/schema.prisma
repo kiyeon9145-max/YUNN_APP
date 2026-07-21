@@ -30,6 +30,7 @@ model SurveySubmission {
   photoUploaded        Boolean
   resultSkinType       String?
   resultConcernType    String?
+  campaign             String?
   createdAt            DateTime @default(now())
 
   @@index([sessionId])

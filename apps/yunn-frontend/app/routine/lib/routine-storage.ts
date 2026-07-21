@@ -14,6 +14,7 @@ export interface PendingResultData {
   gender: string;
   name: string;
   email: string;
+  campaign: string;
 }
 
 export interface DayChecks {

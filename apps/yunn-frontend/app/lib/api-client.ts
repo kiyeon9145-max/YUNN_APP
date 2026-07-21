@@ -18,6 +18,7 @@ export interface SurveySubmitRequest {
   sleep?: string;
   stress?: string;
   routineLevel?: string;
+  campaign?: string;
 }
 
 export interface SurveySubmitResponse {
@@ -25,6 +26,7 @@ export interface SurveySubmitResponse {
   data: {
     resultSkinType: string;
     resultConcernType: string;
+    campaign?: string | null;
   };
   error?: {
     code: string;
@@ -42,6 +44,7 @@ export interface SurveyGetResponse {
     city?: string;
     photoUploaded: boolean;
     createdAt: string;
+    campaign?: string | null;
   };
   error?: {
     code: string;

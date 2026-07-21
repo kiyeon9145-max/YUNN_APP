@@ -329,6 +329,38 @@ describe("POST /surveys", () => {
     expect(response.status).toBe(200);
     expect(response.body.data.resultConcernType).toBe("Marks");
   });
+
+  // 해피패스: campaign 필드를 포함하여 저장 및 조회
+  it("should save and return campaign field in POST and GET", async () => {
+    const sessionId = "campaign_test_session_001";
+
+    // POST - campaign 포함하여 저장
+    const postResponse = await request(app)
+      .post("/surveys")
+      .send({
+        sessionId,
+        skinType: "Oily",
+        photoUploaded: false,
+        campaign: "coffee_coupon",
+      });
+
+    // 디버그: 500 에러 응답 내용 로깅
+    if (postResponse.status !== 200) {
+      console.log("POST ERROR Response:", JSON.stringify(postResponse.body, null, 2));
+    }
+
+    expect(postResponse.status).toBe(200);
+    expect(postResponse.body.data).toHaveProperty("campaign");
+    expect(postResponse.body.data.campaign).toBe("coffee_coupon");
+
+    // GET - campaign이 그대로 반환되는지 확인
+    const getResponse = await request(app).get(`/surveys/${sessionId}`);
+
+    expect(getResponse.status).toBe(200);
+    expect(getResponse.body.data).toHaveProperty("campaign");
+    expect(getResponse.body.data.campaign).toBe("coffee_coupon");
+    expect(getResponse.body.data.skinType).toBe("Oily");
+  });
 });
 
 describe("GET /surveys/:sessionId", () => {

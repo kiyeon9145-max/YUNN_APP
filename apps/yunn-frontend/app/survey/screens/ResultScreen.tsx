@@ -120,6 +120,7 @@ export default function ResultScreen({ answers, onRetake }: ResultScreenProps) {
       gender: data.gender,
       name: data.name,
       email: answers.email || "",
+      campaign: variant === "B" ? "coffee_coupon" : "routine",
     });
 
     // fbq 전송 여유를 위해 300ms 지연 후 이동

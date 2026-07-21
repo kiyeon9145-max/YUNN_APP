@@ -7,7 +7,7 @@ const surveyRepository = new SurveyRepository();
 // 설문을 저장하고 결과를 반환합니다
 export async function submitSurvey(
   request: SurveySubmitRequest
-): Promise<{ resultSkinType: string | null; resultConcernType: string | null; sessionId: string; createdAt: string }> {
+): Promise<{ resultSkinType: string | null; resultConcernType: string | null; sessionId: string; createdAt: string; campaign: string | null }> {
   try {
     // resultSkinType은 skinType과 동일
     const resultSkinType = request.skinType || null;
@@ -34,6 +34,7 @@ export async function submitSurvey(
     photoUploaded: request.photoUploaded,
     resultSkinType,
     resultConcernType,
+    campaign: request.campaign ?? null,
   });
 
     console.log("[submitSurvey] Survey saved successfully:", survey.sessionId);
@@ -43,6 +44,7 @@ export async function submitSurvey(
       resultConcernType,
       sessionId: survey.sessionId,
       createdAt: survey.createdAt.toISOString(),
+      campaign: survey.campaign,
     };
   } catch (error) {
     console.error("[submitSurvey] Error:", error);

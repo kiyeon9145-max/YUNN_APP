@@ -9,6 +9,15 @@ import { SurveyAnswersSchema } from "../lib/schemas/survey";
 import { toConcernKey } from "./result-data";
 import type { SurveyAnswers } from "./page";
 
+// ab_variant 쿠키에서 campaign 값으로 매핑 (ab_variant A→routine, B→coffee_coupon)
+function getCampaignFromCookie(): string {
+  const cookieValue = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("ab_variant="))
+    ?.split("=")[1];
+  return cookieValue === "B" ? "coffee_coupon" : "routine";
+}
+
 interface SendSurveySheetOptions {
   photoUploaded: boolean;
 }
@@ -44,6 +53,7 @@ export const SURVEY_SHEET_COLUMNS = [
   "photo_uploaded",
   "result_skin_type",
   "result_concern_type",
+  "campaign",
 ] as const;
 
 // 검증된 설문 답변을 Sheets 형식으로 변환한다. (데이터 형식화만 담당)
@@ -74,6 +84,7 @@ export function buildSurveySheetPayload(
     photo_uploaded: photoUploaded,
     result_skin_type: answers.skinType,
     result_concern_type: concernType,
+    campaign: getCampaignFromCookie(),
   };
 }
 
@@ -107,6 +118,7 @@ export async function sendSurveyCompletionToSheet(
     sleep: answers.sleep,
     stress: answers.stress,
     routineLevel: answers.routineLevel,
+    campaign: getCampaignFromCookie(),
   }).catch((error) => {
     console.warn("[sendSurveyCompletionToSheet] API submit failed:", error);
   });

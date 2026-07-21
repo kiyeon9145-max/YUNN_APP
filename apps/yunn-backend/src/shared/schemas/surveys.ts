@@ -25,6 +25,7 @@ export const SurveySubmitSchema = z.object({
     .enum(["Nothing", "Wash only", "Basic", "Multi"])
     .optional(),
   photoUploaded: z.boolean(),
+  campaign: z.string().optional(),
 });
 
 export type SurveySubmitRequest = z.infer<typeof SurveySubmitSchema>;
@@ -34,6 +35,7 @@ export const SurveySubmitResponseSchema = z.object({
   resultConcernType: z.string().nullable(),
   sessionId: z.string(),
   createdAt: z.string(),
+  campaign: z.string().nullable(),
 });
 
 export type SurveySubmitResponse = z.infer<typeof SurveySubmitResponseSchema>;
@@ -46,6 +48,7 @@ export const SurveyGetResponseSchema = z.object({
   city: z.string().nullable(),
   photoUploaded: z.boolean(),
   createdAt: z.string(),
+  campaign: z.string().nullable(),
 });
 
 export type SurveyGetResponse = z.infer<typeof SurveyGetResponseSchema>;

@@ -20,5 +20,6 @@ export async function getSurvey(sessionId: string): Promise<SurveyGetResponse> {
     city: survey.city,
     photoUploaded: survey.photoUploaded,
     createdAt: survey.createdAt.toISOString(),
+    campaign: survey.campaign,
   };
 }
