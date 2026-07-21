@@ -294,10 +294,10 @@ export const STEP8_GROUPS: OptionGroup[] = [
     name: "stress",
     question: "How would you describe your stress level?",
     options: [
-      { value: "Very high", label: "Very high" },
-      { value: "High", label: "High" },
-      { value: "Manageable", label: "Manageable" },
       { value: "Low", label: "Low" },
+      { value: "Medium", label: "Manageable" },
+      { value: "High", label: "High" },
+      { value: "Very high", label: "Very high" },
     ],
   },
 ];
