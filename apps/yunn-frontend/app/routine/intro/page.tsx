@@ -7,7 +7,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { trackEvent, getSessionId } from "@/app/lib/analytics";
-import { getPendingResult } from "@/app/routine/lib/routine-storage";
 import BenefitCard from "./components/BenefitCard";
 import InfoRow from "./components/InfoRow";
 
@@ -40,15 +39,13 @@ export default function RoutineIntroPage() {
     trackEvent("routine_intro_cta_click");
 
     const FALLBACK_FORM_URL =
-      "https://docs.google.com/forms/d/e/1FAIpQLSeaZgxM0-jGhdBJzJARLwAHCnyyvQaYfFw3QsP4iYq_5M5C3Q/viewform?usp=header";
+      "https://docs.google.com/forms/d/e/1FAIpQLSeaZgxM0-jGhdBJzJARLwAHCnyyvQaYfFw3QsP4iYq_5M5C3Q/viewform";
 
     const baseUrl = process.env.NEXT_PUBLIC_YUNN_FEEDBACK_FORM_URL || FALLBACK_FORM_URL;
     const sessionEntryId = process.env.NEXT_PUBLIC_YUNN_FORM_SESSION_ENTRY_ID;
-    const campaignEntryId = process.env.NEXT_PUBLIC_YUNN_FORM_CAMPAIGN_ENTRY_ID;
 
     const params = new URLSearchParams();
     if (sessionEntryId) params.set(`entry.${sessionEntryId}`, getSessionId());
-    if (campaignEntryId) params.set(`entry.${campaignEntryId}`, getPendingResult()?.campaign ?? "");
 
     const url = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
     window.location.href = url;
