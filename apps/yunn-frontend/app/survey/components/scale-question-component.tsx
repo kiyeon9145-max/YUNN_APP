@@ -76,7 +76,7 @@ export default function ScaleQuestionStep({
                 "cursor-pointer transition-colors duration-150",
                 isSelected
                   ? "border-[#5CC1A6] bg-[#5CC1A6] text-white"
-                  : "border-[#5CC1A6] bg-white text-[#5CC1A6]",
+                  : "border-[#5CC1A6] bg-white text-black",
               ].join(" ")}
             >
               {n}

@@ -58,7 +58,7 @@ export default function FeedbackSurveyPage() {
     <>
       {/* ── Q1: How useful was your personalized skin plan? ──────────────────── */}
       {step === "usefulness" && (
-        <SurveyShell currentStep={1} totalSteps={9}>
+        <SurveyShell hideHeader showCustomHeader currentStep={1} totalSteps={9}>
           <ScaleQuestionStep
             title="How useful was your personalized skin plan?"
             minLabel="Not useful at all"
@@ -75,7 +75,7 @@ export default function FeedbackSurveyPage() {
 
       {/* ── Q2: How accurately did YUNN identify your skin type and concerns? ── */}
       {step === "accuracy" && (
-        <SurveyShell currentStep={2} totalSteps={9}>
+        <SurveyShell hideHeader showCustomHeader currentStep={2} totalSteps={9}>
           <ScaleQuestionStep
             title="How accurately did YUNN identify your skin type and concerns?"
             minLabel="Didn't match at all"
@@ -92,7 +92,7 @@ export default function FeedbackSurveyPage() {
 
       {/* ── Q3: Before using YUNN, how sure were you that your skincare routine was right for your skin? ── */}
       {step === "routineConfidence" && (
-        <SurveyShell currentStep={3} totalSteps={9}>
+        <SurveyShell hideHeader showCustomHeader currentStep={3} totalSteps={9}>
           <ScaleQuestionStep
             title="Before using YUNN, how sure were you that your skincare routine was right for your skin?"
             minLabel="Not sure at all"
@@ -109,7 +109,7 @@ export default function FeedbackSurveyPage() {
 
       {/* ── Q4: How likely are you to recommend YUNN to a friend? ───────────── */}
       {step === "recommend" && (
-        <SurveyShell currentStep={4} totalSteps={9}>
+        <SurveyShell hideHeader showCustomHeader currentStep={4} totalSteps={9}>
           <ScaleQuestionStep
             title="How likely are you to recommend YUNN to a friend?"
             minLabel="Not at all likely"
@@ -126,7 +126,7 @@ export default function FeedbackSurveyPage() {
 
       {/* ── Q5: What made you decide to unlock your 14-day skin plan? ──────── */}
       {step === "unlockReason" && (
-        <SurveyShell currentStep={5} totalSteps={9}>
+        <SurveyShell hideHeader showCustomHeader currentStep={5} totalSteps={9}>
           <TextQuestionStep
             title="What made you decide to unlock your 14-day skin plan?"
             requiredMessage="Please share what made you decide to unlock your plan."
@@ -141,7 +141,7 @@ export default function FeedbackSurveyPage() {
 
       {/* ── Q6: What else would you like YUNN to help you with? ────────────── */}
       {step === "helpWishlist" && (
-        <SurveyShell currentStep={6} totalSteps={9}>
+        <SurveyShell hideHeader showCustomHeader currentStep={6} totalSteps={9}>
           <TextQuestionStep
             title="What else would you like YUNN to help you with?"
             requiredMessage="Please share what else YUNN could help with."
@@ -156,7 +156,7 @@ export default function FeedbackSurveyPage() {
 
       {/* ── Q7: What would make YUNN a product you would use every week? ───── */}
       {step === "weeklyUseReason" && (
-        <SurveyShell currentStep={7} totalSteps={9}>
+        <SurveyShell hideHeader showCustomHeader currentStep={7} totalSteps={9}>
           <TextQuestionStep
             title="What would make YUNN a product you would use every week?"
             requiredMessage="Please share what would make you use YUNN weekly."
@@ -171,7 +171,7 @@ export default function FeedbackSurveyPage() {
 
       {/* ── Q8: How valuable would it be to have someone guide you through your skincare routine every day? ── */}
       {step === "dailyGuidanceValue" && (
-        <SurveyShell currentStep={8} totalSteps={9}>
+        <SurveyShell hideHeader showCustomHeader currentStep={8} totalSteps={9}>
           <ScaleQuestionStep
             title="How valuable would it be to have someone guide you through your skincare routine every day?"
             minLabel="I don't need it"
@@ -188,7 +188,7 @@ export default function FeedbackSurveyPage() {
 
       {/* ── Q9: If YUNN were available today, how likely would you be to start using it? ── */}
       {step === "startLikelihood" && (
-        <SurveyShell currentStep={9} totalSteps={9}>
+        <SurveyShell hideHeader showCustomHeader currentStep={9} totalSteps={9}>
           <ScaleQuestionStep
             title="If YUNN were available today, how likely would you be to start using it?"
             minLabel="Not at all likely"

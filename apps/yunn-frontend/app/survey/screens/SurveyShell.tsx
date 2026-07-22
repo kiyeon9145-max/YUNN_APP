@@ -16,12 +16,16 @@ import Link from "next/link";
 interface SurveyShellProps {
   currentStep: number; // 현재 스텝 번호 (1~10)
   totalSteps?: number; // 전체 스텝 수 (기본 10)
+  hideHeader?: boolean; // 헤더 아이콘 숨김 (기본 false)
+  showCustomHeader?: boolean; // YUNN + Skin Report 커스텀 헤더 표시
   children: React.ReactNode;
 }
 
 export default function SurveyShell({
   currentStep,
   totalSteps = 10,
+  hideHeader = false,
+  showCustomHeader = false,
   children,
 }: SurveyShellProps) {
   // SurveyScreen.js updateProgress() 근거: progressStep / DISPLAYED_PAGES * 100
@@ -33,37 +37,49 @@ export default function SurveyShell({
           아이콘은 mt-[39px]로 세로 중앙 정렬.
           로고는 absolute left-1/2 top-[51px] — 진단 화면과 동일한 scale(1.75).
           ──────────────────────────────────────────────────────────── */}
-      <div className="h-[104px] px-6 flex justify-between items-start relative bg-white">
-        <i className="ph ph-list text-[23px] cursor-pointer text-black mt-[39px] relative z-[2]"></i>
+      {!hideHeader && (
+        <div className="h-[104px] px-6 flex justify-between items-start relative bg-white">
+          <i className="ph ph-list text-[23px] cursor-pointer text-black mt-[39px] relative z-[2]"></i>
 
-        <Link
-          href="/"
-          className="absolute left-1/2 w-[128px] h-[58px] overflow-visible z-[1]"
-          style={{
-            top: "51px",
-            transform: "translate(-50%, -50%) scale(1.75)",
-            transformOrigin: "center",
-          }}
-          aria-label="YUNN 홈으로 이동"
-        >
-          <div className="relative w-full h-full">
-            <Image
-              src="/images/yunn_logo.png"
-              alt="YUNN"
-              fill
-              className="object-contain"
-              sizes="128px"
-            />
-          </div>
-        </Link>
+          <Link
+            href="/"
+            className="absolute left-1/2 w-[128px] h-[58px] overflow-visible z-[1]"
+            style={{
+              top: "51px",
+              transform: "translate(-50%, -50%) scale(1.75)",
+              transformOrigin: "center",
+            }}
+            aria-label="YUNN 홈으로 이동"
+          >
+            <div className="relative w-full h-full">
+              <Image
+                src="/images/yunn_logo.png"
+                alt="YUNN"
+                fill
+                className="object-contain"
+                sizes="128px"
+              />
+            </div>
+          </Link>
 
-        <div className="flex items-center gap-[10px] relative z-[2] mt-[39px]">
-          <i className="ph ph-user text-[23px] cursor-pointer text-black"></i>
-          <div className="w-6 h-6 inline-flex items-center justify-center relative">
-            <i className="ph ph-shopping-bag text-[23px] cursor-pointer text-black"></i>
+          <div className="flex items-center gap-[10px] relative z-[2] mt-[39px]">
+            <i className="ph ph-user text-[23px] cursor-pointer text-black"></i>
+            <div className="w-6 h-6 inline-flex items-center justify-center relative">
+              <i className="ph ph-shopping-bag text-[23px] cursor-pointer text-black"></i>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Custom Header (YUNN + Skin Report) ───────────────────────────────── */}
+      {showCustomHeader && (
+        <div className="bg-white px-[25px] pt-[16px] pb-[12px]">
+          <div className="flex flex-col items-center gap-[4px]">
+            <h1 className="text-[32px] font-bold text-[#5CC1A6]">YUNN</h1>
+            <p className="text-[16px] text-[#999999]">Skin Report</p>
+          </div>
+        </div>
+      )}
 
       {/* ── Progress Bar + Step Indicator ─────────────────────────
           .progress-wrapper: h 4px, bg #d7d7d7, mb 18px
