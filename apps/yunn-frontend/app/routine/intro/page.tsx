@@ -6,7 +6,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { trackEvent } from "@/app/lib/analytics";
+import { trackEvent, getSessionId } from "@/app/lib/analytics";
 import BenefitCard from "./components/BenefitCard";
 import InfoRow from "./components/InfoRow";
 
@@ -37,7 +37,18 @@ export default function RoutineIntroPage() {
 
   const handleStart = () => {
     trackEvent("routine_intro_cta_click");
-    router.push("/survey/feedback");
+
+    const FALLBACK_FORM_URL =
+      "https://docs.google.com/forms/d/e/1FAIpQLSeaZgxM0-jGhdBJzJARLwAHCnyyvQaYfFw3QsP4iYq_5M5C3Q/viewform";
+
+    const baseUrl = process.env.NEXT_PUBLIC_YUNN_FEEDBACK_FORM_URL || FALLBACK_FORM_URL;
+    const sessionEntryId = process.env.NEXT_PUBLIC_YUNN_FORM_SESSION_ENTRY_ID;
+
+    const params = new URLSearchParams();
+    if (sessionEntryId) params.set(`entry.${sessionEntryId}`, getSessionId());
+
+    const url = params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl;
+    window.location.href = url;
   };
 
   return (
