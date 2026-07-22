@@ -26,6 +26,8 @@ export interface SurveySubmitResponse {
   data: {
     resultSkinType: string;
     resultConcernType: string;
+    sessionId: string;
+    createdAt: string;
     campaign?: string | null;
   };
   error?: {
