@@ -27,7 +27,7 @@ type FeedbackStep =
   | "startLikelihood"
   | "done";
 
-interface FeedbackAnswers {
+export interface FeedbackAnswers {
   usefulness?: string;
   accuracy?: string;
   routineConfidence?: string;
