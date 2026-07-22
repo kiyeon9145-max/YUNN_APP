@@ -32,7 +32,7 @@ export default function SurveyShell({
   const progressPct = (currentStep / totalSteps) * 100;
 
   return (
-    <div className="w-full max-w-phone-max min-h-[852px] mx-auto bg-white relative pb-[26px]">
+    <div className="w-full max-w-phone-max min-h-[852px] mx-auto bg-[#F8F9FA] relative pb-[26px]">
       {/* ── Top Header (h 104px) ──────────────────────────────────
           아이콘은 mt-[39px]로 세로 중앙 정렬.
           로고는 absolute left-1/2 top-[51px] — 진단 화면과 동일한 scale(1.75).
@@ -73,9 +73,9 @@ export default function SurveyShell({
 
       {/* ── Custom Header (YUNN + Skin Report) ───────────────────────────────── */}
       {showCustomHeader && (
-        <div className="bg-white px-[25px] pt-[16px] pb-[12px]">
-          <div className="flex flex-col items-center gap-[4px]">
-            <h1 className="text-[32px] font-bold text-[#5CC1A6]">YUNN</h1>
+        <div className="bg-[#F5FAF9] px-[25px] pt-[16px] pb-[12px]">
+          <div className="flex flex-col items-start gap-[4px]">
+            <h1 className="text-[32px] font-semibold text-[#5CC1A6]">YUNN</h1>
             <p className="text-[16px] text-[#999999]">Skin Report</p>
           </div>
         </div>
@@ -86,7 +86,7 @@ export default function SurveyShell({
           .progress-bar:     bg #5cc1a6, transition width 300ms
           .step-indicator:   text-xs, mb 14px
           ──────────────────────────────────────────────────────────── */}
-      <div className="bg-white px-[25px] relative z-10">
+      <div className="bg-[#F8F9FA] px-[25px] relative z-10">
         <div className="w-full h-1 bg-[#d7d7d7] rounded-sm overflow-hidden mb-[18px]">
           <div
             className="h-full bg-[#5cc1a6] transition-[width] duration-300 ease-in-out"
