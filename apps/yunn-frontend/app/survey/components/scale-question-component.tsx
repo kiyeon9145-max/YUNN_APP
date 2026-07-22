@@ -51,7 +51,7 @@ export default function ScaleQuestionStep({
 
   return (
     <>
-      <h2 className="text-[24px] font-bold leading-[1.12] tracking-[-0.01em] text-black mb-[10px]">
+      <h2 className="text-[20px] font-normal leading-[1.4] tracking-normal text-black mb-[10px]">
         {title}
       </h2>
 
@@ -75,8 +75,8 @@ export default function ScaleQuestionStep({
                 "flex items-center justify-center text-[11px] font-semibold",
                 "cursor-pointer transition-colors duration-150",
                 isSelected
-                  ? "border-primary bg-primary text-white"
-                  : "border-line bg-white text-ink",
+                  ? "border-[#5CC1A6] bg-[#5CC1A6] text-white"
+                  : "border-[#5CC1A6] bg-white text-[#5CC1A6]",
               ].join(" ")}
             >
               {n}
@@ -85,7 +85,7 @@ export default function ScaleQuestionStep({
         })}
       </div>
 
-      <div className="flex justify-between mt-[10px] text-[11px] text-ink-muted">
+      <div className="flex justify-between mt-[10px] text-[11px] text-black">
         <span>{minLabel}</span>
         <span>{maxLabel}</span>
       </div>

@@ -48,7 +48,7 @@ export default function TextQuestionStep({
 
   return (
     <>
-      <h2 className="text-[24px] font-bold leading-[1.12] tracking-[-0.01em] text-black mb-[10px]">
+      <h2 className="text-[20px] font-normal leading-[1.4] tracking-normal text-black mb-[10px]">
         {title}
       </h2>
 

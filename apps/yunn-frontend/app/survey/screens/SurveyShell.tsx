@@ -77,9 +77,6 @@ export default function SurveyShell({
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <div className="text-xs text-black mb-[14px] font-normal">
-          Page {currentStep} of {totalSteps}
-        </div>
       </div>
 
       {/* ── Step Content ─────────────────────────────────────────── */}
