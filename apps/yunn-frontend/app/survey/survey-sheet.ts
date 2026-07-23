@@ -81,7 +81,7 @@ export function buildSurveySheetPayload(
     sleep: answers.sleep,
     stress: answers.stress,
     routine_level: answers.routineLevel,
-    photo_uploaded: photoUploaded,
+    photo_uploaded: photoUploaded ? "yes" : "no",
     result_skin_type: answers.skinType,
     result_concern_type: concernType,
     campaign: getCampaignFromCookie(),
