@@ -6,6 +6,8 @@
 const SHEET_ENDPOINT =
   process.env.NEXT_PUBLIC_YUNN_SHEET_ENDPOINT || "";
 
+console.log("[SHEET_ENDPOINT]", SHEET_ENDPOINT);
+
 export type SheetPayloadValue =
   | string
   | number
@@ -33,14 +35,24 @@ export function buildSheetUrl(payload: SheetPayload, endpoint = SHEET_ENDPOINT) 
 
 // CORS preflight 없이 Apps Script doGet을 호출하기 위해 이미지 픽셀 요청을 사용한다.
 export function sendToSheet(payload: SheetPayload) {
-  if (typeof window === "undefined" || !SHEET_ENDPOINT) return null;
+  if (typeof window === "undefined") {
+    console.warn("[sendToSheet] window is undefined");
+    return null;
+  }
+
+  if (!SHEET_ENDPOINT) {
+    console.warn("[sendToSheet] SHEET_ENDPOINT is empty");
+    return null;
+  }
 
   try {
+    const url = buildSheetUrl(payload);
+    console.log("[sendToSheet] Sending to:", url);
     const img = new Image();
-    img.src = buildSheetUrl(payload);
-    return img.src;
-  } catch {
-    // Sheets 전송은 운영 로그용이므로 사용자 설문 흐름을 막지 않는다.
+    img.src = url;
+    return url;
+  } catch (err) {
+    console.warn("[sendToSheet] Error:", err);
     return null;
   }
 }
